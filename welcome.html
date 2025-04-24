@@ -1,5 +1,6 @@
 <html lang="zh">
     <hand>
+        <meta charset="UTF-8">
         <title>Welcome!</title>
         <style>
             body {
@@ -10,19 +11,96 @@
                 background-size:cover;
                 background-color: #464646;
             }
-            .box {
+            * {
+                margin: 0;
+                padding: 0;
+                vertical-align: top;
+            }
+            .top{
+                width: 100%;
+                height: 20%;
+            }
+            .top .title{
+                display: inline-block;
+                position: relative;
+                left: 50%;
+                top: 50%;
+                transform: translateX(-50%) translateY(-50%);
+                color: #459cff;
+                font-size: 5rem;
+                font-weight: bolder;
+            }
+            .main{
+                width: 100%;
+                height: 70%;
+            }
+            .main .left {
+                display: inline-block;
                 backdrop-filter: blur(10px) brightness(90%);
                 background-color: rgba(255, 255, 255, 0.3);
-                width: 50rem;
-                height: 30rem;
                 border-radius: 10px;
-                margin: 10% auto;
+                width: 60%;
+                height: 100%;
+                position: relative;
+                left: 10%;
+            }
+            .main .right{
+                display: inline-block;
+                backdrop-filter: blur(10px) brightness(90%);
+                background-color: rgba(255, 255, 255, 0.3);
+                border-radius: 10px;
+                width: 20%;
+                height: 100%;
+                position: relative;
+                left: 10%;
+            }
+            .main .right .chat{
+                width: 100%;
+                height: 80%;
+            }
+            .main .right .enter{
+                width: 100%;
+                height: 5%;
+                background-color: #3792cf;
+            }
+            .main .right input{
+                width: 100%;
+                height: 15%;
+                background-color: rgba(255, 255, 255, 0.3);
+                border-radius: 10px;
+                border-color: #459cff;
             }
         </style>
     </hand>
     <body>
-        <div class="box">
-            
+        <div class="top">
+            <p class="title">Ecaps's Home</p>
+        </div>
+        <br>
+        <div class="main">
+            <div class="left">
+                
+            </div>
+            <div class="right">
+                <div class="chat">
+
+                </div>
+                <div class="enter">
+                    <p style="
+                        color: #ffffff;
+                        font-size: 1.25cqw;
+                        resize: both;
+                        font-weight: bolder;
+                        text-align: center;
+                        container-type: size;
+                        ">
+                        Enter
+                    </p>
+                </div>
+                <input type="text">
+
+                </input>
+            </div>
         </div>
     </body>
 </html>
