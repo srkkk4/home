@@ -7,12 +7,16 @@
                 overflow: hidden;
             }
             body {
-                background-image: url(background_.png);
+                background-image: url(background.png);
                 background-position: center center;
                 background-repeat: no-repeat;
                 background-attachment:fixed;
                 background-size:cover;
                 background-color: #464646;
+            }
+            body::selection{
+                color: white;
+                background-color: #9999ff;
             }
             * {
                 margin: 0;
@@ -28,9 +32,9 @@
             textarea{
                 outline: none;
                 resize: none;
-            }
-            textarea::-webkit-scrollbar{
-                width: 0px;
+                overflow-x: auto;
+                scrollbar-color: rgba(153,204,255,0.5) rgba(255,255,255,0);
+                scrollbar-width: thin;
             }
             .top{
                 width: 100%;
@@ -94,7 +98,7 @@
                 border-color: #99ccff;
                 font-size: 20px;
             }
-            .main .right textarea:focus{
+            .main .right .input:focus{
                 background-color: rgba(255, 255, 255, 0.5);
                 border-color: #ffccff;
             }
@@ -133,6 +137,7 @@
             </div>
         </div>
         <canvas id="trail-canvas"></canvas>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
         <script>
             // --------------------------------
             // WebSocket API
@@ -151,16 +156,6 @@
 
             function refresh(){
                 ws.send('0x02');
-            }
-
-            ws.onmessage = function(event){
-                var chat=document.querySelector('.main .right .chat');
-                const res=JSON.parse(event.data);
-                let text = "";
-                for (line of res){
-                    text = `${text}[${line[0]}]\n${line[1]}\n\n`;
-                }
-                chat.innerHTML=text;
             }
 
             window.onbeforeunload = function(){
@@ -372,17 +367,38 @@
 
             var button=document.querySelector('.main .right .enter');
             button.onclick = function(){
-                var typing=document.querySelector('.main .right .input').value;
-                send(typing);
+                var text=document.querySelector('.main .right .input');
+                send(text.value); text.value="";
                 refresh();
             }
 
-            const body=document.querySelector('body');
-            body.addEventListener("click",
-                function(){
-                    clickEffect();
+            var inputarea=document.querySelector('.main .right .input');
+            inputarea.addEventListener('focus',function(){
+                document.addEventListener('keydown',function(event){
+                    if (event.ctrlKey && (event.key === 'Enter' || event.keyCode === 13)){ // 监听Ctrl+Enter
+                        event.preventDefault();
+                        var text=document.querySelector('.main .right .input');
+                        send(text.value); text.value="";
+                        refresh();
+                    }
+                });
+            });
+            
+            ws.onmessage = function(event){
+                var chat=document.querySelector('.main .right .chat');
+                const lst=chat.value;
+                const res=JSON.parse(event.data);
+                let text = "";
+                for (line of res){
+                    text = `${text}[${line[0]}]\n${line[1]}\n\n`;
                 }
-            );
+                chat.innerHTML=text;
+                if (lst != text){ // 记录刷新则滚动至底部
+                    chat.scrollTop = chat.scrollHeight;
+                }
+            }
+
+            // clickEffect();
         </script>
     </body>
 </html>
