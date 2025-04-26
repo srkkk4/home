@@ -3,6 +3,9 @@
         <meta charset="UTF-8">
         <title>Welcome!</title>
         <style>
+            body, html {
+                overflow: hidden;
+            }
             body {
                 background-image: url(background_.png);
                 background-position: center center;
@@ -21,6 +24,13 @@
             }
             input{
                 outline: none;
+            }
+            textarea{
+                outline: none;
+                resize: none;
+            }
+            textarea::-webkit-scrollbar{
+                width: 0px;
             }
             .top{
                 width: 100%;
@@ -70,17 +80,30 @@
                 background-color: #99ccff;
                 border-radius: 10px;
             }
+            .main .right .enter:hover{
+                background-color: #9999ff;
+            }
+            .main .right .enter:active{
+                background-color: #99ffff;
+            }
             .main .right textarea{
                 width: 100%;
                 height: 15%;
                 background-color: rgba(255, 255, 255, 0.3);
                 border-radius: 10px;
                 border-color: #99ccff;
-                font-size: 15px;
+                font-size: 20px;
             }
             .main .right textarea:focus{
                 background-color: rgba(255, 255, 255, 0.5);
                 border-color: #ffccff;
+            }
+            #trail-canvas {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                pointer-events: none; /* 不阻挡鼠标事件 */
+                z-index: 9999;
             }
         </style>
     </hand>
@@ -94,7 +117,7 @@
                 
             </div>
             <div class="right">
-                <textarea class="chat"></textarea>
+                <textarea class="chat" readonly></textarea>
                 <button class="enter">
                     <p style="
                         color: #ffffff;
@@ -109,7 +132,10 @@
                 <textarea class="input" type="text" placeholder="express Enter to send"></textarea>
             </div>
         </div>
+        <canvas id="trail-canvas"></canvas>
         <script>
+            // --------------------------------
+            // WebSocket API
             var host='ws://localhost:4000';
             var ws=new WebSocket(host);
             var holderstatus=document.querySelector('.main .right textarea').placeholder;
@@ -126,28 +152,237 @@
             function refresh(){
                 ws.send('0x02');
             }
-            setInterval('refresh()','1000');
 
             ws.onmessage = function(event){
                 var chat=document.querySelector('.main .right .chat');
                 const res=JSON.parse(event.data);
-                let pas = "";
+                let text = "";
                 for (line of res){
-                    pas = pas + line + '\n========================\n';
+                    text = `${text}[${line[0]}]\n${line[1]}\n\n`;
                 }
-                chat.innerHTML=pas;
-            }
-
-            var button=document.querySelector('.main .right .enter');
-            button.onclick = function(){
-                var typing=document.querySelector('.main .right .input').value;
-                send(typing);
-                console.log('sent:\n'+typing);
+                chat.innerHTML=text;
             }
 
             window.onbeforeunload = function(){
                 ws.close();
             }
+
+            // --------------------------------
+            // Cursor Actives
+
+            function clickEffect() {
+            let balls = [];
+            let longPressed = false;
+            let longPress;
+            let multiplier = 0;
+            let width, height;
+            let origin;
+            let normal;
+            let ctx;
+            const colours = ["#F73859", "#14FFEC", "#00E0FF", "#FF99FE", "#FAF15D"];
+            const canvas = document.createElement("canvas");
+            document.body.appendChild(canvas);
+            canvas.setAttribute("style", "width: 100%; height: 100%; top: 0; left: 0; z-index: 99999; position: fixed; pointer-events: none;");
+            const pointer = document.createElement("span");
+            pointer.classList.add("pointer");
+            document.body.appendChild(pointer);
+            
+            if (canvas.getContext && window.addEventListener) {
+                ctx = canvas.getContext("2d");
+                updateSize();
+                window.addEventListener('resize', updateSize, false);
+                loop();
+                window.addEventListener("mousedown", function(e) {
+                    pushBalls(randBetween(5, 10), e.clientX, e.clientY);
+                    document.body.classList.add("is-pressed");
+                    longPress = setTimeout(function(){
+                        document.body.classList.add("is-longpress");
+                        longPressed = true;
+                    }, 500);
+                }, false);
+                window.addEventListener("mouseup", function(e) {
+                    clearInterval(longPress);
+                    if (longPressed == true) {
+                        document.body.classList.remove("is-longpress");
+                        pushBalls(randBetween(10 + Math.ceil(multiplier), 20 + Math.ceil(multiplier)), e.clientX, e.clientY);
+                        longPressed = false;
+                    }
+                    document.body.classList.remove("is-pressed");
+                }, false);
+                window.addEventListener("mousemove", function(e) {
+                    let x = e.clientX;
+                    let y = e.clientY;
+                    pointer.style.top = y + "px";
+                    pointer.style.left = x + "px";
+                }, false);
+            } else {
+                console.log("canvas or addEventListener is unsupported!");
+            }
+            
+            
+            function updateSize() {
+                canvas.width = window.innerWidth * 2;
+                canvas.height = window.innerHeight * 2;
+                canvas.style.width = window.innerWidth + 'px';
+                canvas.style.height = window.innerHeight + 'px';
+                ctx.scale(2, 2);
+                width = (canvas.width = window.innerWidth);
+                height = (canvas.height = window.innerHeight);
+                origin = {
+                x: width / 2,
+                y: height / 2
+                };
+                normal = {
+                x: 0,
+                y: 0
+                };
+            }
+            class Ball {
+                constructor(x = origin.x, y = origin.y) {
+                    this.x = x;
+                    this.y = y;
+                    this.angle = Math.PI * 2 * Math.random();
+                    if (longPressed == true) {
+                        this.multiplier = randBetween(14 + multiplier, 15 + multiplier);
+                    } else {
+                        this.multiplier = randBetween(6, 12);
+                    }
+                    this.vx = (this.multiplier + Math.random() * 0.5) * Math.cos(this.angle);
+                    this.vy = (this.multiplier + Math.random() * 0.5) * Math.sin(this.angle);
+                    this.r = randBetween(8, 12) + 3 * Math.random();
+                    this.color = colours[Math.floor(Math.random() * colours.length)];
+                }
+                update() {
+                    this.x += this.vx - normal.x;
+                    this.y += this.vy - normal.y;
+                    normal.x = -2 / window.innerWidth * Math.sin(this.angle);
+                    normal.y = -2 / window.innerHeight * Math.cos(this.angle);
+                    this.r -= 0.3;
+                    this.vx *= 0.9;
+                    this.vy *= 0.9;
+                }
+            }
+            
+            function pushBalls(count = 1, x = origin.x, y = origin.y) {
+                for (let i = 0; i < count; i++) {
+                    balls.push(new Ball(x, y));
+                }
+            }
+            
+            function randBetween(min, max) {
+                return Math.floor(Math.random() * max) + min;
+            }
+            
+            function loop() {
+                ctx.fillStyle = "rgba(255, 255, 255, 0)";
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < balls.length; i++) {
+                    let b = balls[i];
+                    if (b.r < 0) continue;
+                    ctx.fillStyle = b.color;
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2, false);
+                    ctx.fill();
+                    b.update();
+                }
+                if (longPressed == true) {
+                    multiplier += 0.2;
+                } else if (!longPressed && multiplier >= 0) {
+                    multiplier -= 0.4;
+                }
+                removeBall();
+                requestAnimationFrame(loop);
+            }
+            
+            function removeBall() {
+                for (let i = 0; i < balls.length; i++) {
+                    let b = balls[i];
+                    if (b.x + b.r < 0 || b.x - b.r > width || b.y + b.r < 0 || b.y - b.r > height || b.r < 0) {
+                        balls.splice(i, 1);
+                    }
+                }
+            }
+            }
+            // clickEffect(); -> 调用特效函数
+
+            // --------------------------------
+            // Rainbow
+
+            (function() {
+                const canvas = document.getElementById('trail-canvas');
+                const ctx = canvas.getContext('2d');
+                let width = canvas.width = window.innerWidth;
+                let height = canvas.height = window.innerHeight;
+
+                // 存储鼠标位置与时间
+                let lastX = width / 2;
+                let lastY = height / 2;
+                let lastTime = Date.now();
+                let hue = 0;
+
+                window.addEventListener('resize', () => {
+                    width = canvas.width = window.innerWidth;
+                    height = canvas.height = window.innerHeight;
+                });
+
+                window.addEventListener('mousemove', (e) => {
+                    const now = Date.now();
+                    const dx = e.clientX - lastX;
+                    const dy = e.clientY - lastY;
+                    const dt = now - lastTime || 16;
+                    // 计算速度（像素/毫秒）
+                    const speed = Math.sqrt(dx * dx + dy * dy) / dt;
+                    // 根据速度映射到线条宽度范围
+                    const minLine = 1;
+                    const maxLine = 10;
+                    const lineWidth = Math.min(maxLine, Math.max(minLine, 2 / speed * 10));
+
+                    // 绘制线段
+                    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`;
+                    ctx.lineWidth = lineWidth;
+                    ctx.lineCap = 'round';
+                    ctx.beginPath();
+                    ctx.moveTo(lastX, lastY);
+                    ctx.lineTo(e.clientX, e.clientY);
+                    ctx.stroke();
+
+                    // 更新状态
+                    lastX = e.clientX;
+                    lastY = e.clientY;
+                    lastTime = now;
+                    hue = (hue + 1) % 360;
+                });
+
+                // I FADED
+                function fade() {
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'destination-out';
+                    ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                    ctx.fillRect(0, 0, width, height);
+                    ctx.restore();
+                    requestAnimationFrame(fade);
+                }
+                fade();
+            })();
+
+            // --------------------------------
+            // Main
+
+            setInterval('refresh()','1000');
+
+            var button=document.querySelector('.main .right .enter');
+            button.onclick = function(){
+                var typing=document.querySelector('.main .right .input').value;
+                send(typing);
+                refresh();
+            }
+
+            const body=document.querySelector('body');
+            body.addEventListener("click",
+                function(){
+                    clickEffect();
+                }
+            );
         </script>
     </body>
 </html>
